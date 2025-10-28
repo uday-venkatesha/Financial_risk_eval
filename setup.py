@@ -1,0 +1,80 @@
+from setuptools import setup, find_packages
+
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
+setup(
+    name="financial-risk-assessment",
+    version="1.0.0",
+    author="Data Science Team",
+    author_email="udayvenkatesh2015@gmail.com",
+    description="Financial Risk Assessment and Loan Default Prediction System",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/uday-venkatesha/Financial_risk_eval",
+    packages=find_packages(),
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Financial and Insurance Industry",
+        "Topic :: Office/Business :: Financial :: Investment",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "License :: Other/Proprietary License",
+        "Operating System :: OS Independent",
+    ],
+    python_requires=">=3.9",
+    install_requires=[
+        "pandas==2.0.3",
+        "numpy==1.24.3",
+        "faker==18.13.0",
+        "sqlalchemy==1.4.52",
+        "psycopg2-binary==2.9.6",
+        "scikit-learn==1.3.0",
+        "xgboost==1.7.6",
+        "imbalanced-learn==0.11.0",
+        "flask==2.2.5",
+        "flask-cors==4.0.0",
+        "gunicorn<21.0.0",
+        "apache-airflow==2.6.3",
+        "apache-airflow-providers-postgres==5.5.1",
+        "matplotlib==3.7.2",
+        "seaborn==0.12.2",
+        "jupyter==1.0.0",
+        "pytest==7.4.0",
+        "black==23.7.0",
+        "flake8==6.1.0",
+        "pyspark==3.4.1",
+        "mlflow==2.5.0",
+        "pyyaml==6.0.1",
+        "python-dotenv==1.0.0",
+    ],
+    extras_require={
+        "dev": [
+            "pytest>=7.4.0",
+            "black>=23.7.0",
+            "flake8>=6.1.0",
+            "jupyter>=1.0.0",
+            "ipython>=8.12.0",
+        ],
+        "viz": [
+            "matplotlib>=3.7.2",
+            "seaborn>=0.12.2",
+            "plotly>=5.14.0",
+        ],
+    },
+    entry_points={
+        "console_scripts": [
+            "risk-generate-data=scripts.generate_data:main",
+            "risk-run-etl=scripts.run_etl:main",
+            "risk-train-model=scripts.train_model:main",
+            "risk-api=api.app:main",
+        ],
+    },
+    include_package_data=True,
+    package_data={
+        "": ["*.yaml", "*.yml", "*.sql"],
+    },
+    zip_safe=False,
+)

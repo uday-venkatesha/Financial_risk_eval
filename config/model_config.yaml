@@ -1,0 +1,167 @@
+model_training:
+  test_size: 0.2
+  validation_size: 0.1
+  random_state: 42
+  stratify: true
+  
+  # Class imbalance handling
+  class_weight: balanced
+  sampling_strategy: auto  # For SMOTE
+
+features:
+  numerical:
+    - age
+    - annual_income
+    - years_employed
+    - num_dependents
+    - credit_score
+    - num_credit_accounts
+    - credit_utilization_ratio
+    - num_delinquent_accounts
+    - total_debt
+    - years_credit_history
+    - loan_amount
+    - loan_term_months
+    - interest_rate
+    - debt_to_income_ratio
+    - employment_stability_score
+    - delinquency_score
+    - loan_to_income_ratio
+    - avg_monthly_spending
+    - spending_volatility
+    - transaction_count
+  
+  categorical:
+    - employment_status
+    - home_ownership
+    - loan_purpose
+    - marital_status
+    - education_level
+  
+  target: default_flag
+
+preprocessing:
+  scaling:
+    method: standard  # standard, minmax, robust
+    numerical_only: true
+  
+  encoding:
+    categorical_method: label  # label, onehot
+    handle_unknown: ignore
+  
+  missing_values:
+    strategy: mean  # mean, median, mode, constant
+    constant_value: 0
+
+models:
+  logistic_regression:
+    enabled: true
+    hyperparameters:
+      max_iter: 1000
+      random_state: 42
+      solver: lbfgs
+      class_weight: balanced
+      C: 1.0
+    
+  random_forest:
+    enabled: true
+    hyperparameters:
+      n_estimators: 100
+      max_depth: 10
+      min_samples_split: 5
+      min_samples_leaf: 2
+      max_features: sqrt
+      random_state: 42
+      class_weight: balanced
+      n_jobs: -1
+  
+  gradient_boosting:
+    enabled: true
+    hyperparameters:
+      n_estimators: 100
+      learning_rate: 0.1
+      max_depth: 5
+      min_samples_split: 5
+      min_samples_leaf: 2
+      subsample: 0.8
+      random_state: 42
+  
+  xgboost:
+    enabled: true
+    hyperparameters:
+      n_estimators: 100
+      learning_rate: 0.1
+      max_depth: 5
+      min_child_weight: 1
+      subsample: 0.8
+      colsample_bytree: 0.8
+      gamma: 0
+      random_state: 42
+      eval_metric: auc
+      use_label_encoder: false
+
+hyperparameter_tuning:
+  enabled: false
+  method: grid_search  # grid_search, random_search
+  cv_folds: 5
+  scoring: roc_auc
+  
+  random_forest_grid:
+    n_estimators: [50, 100, 200]
+    max_depth: [5, 10, 15, 20]
+    min_samples_split: [2, 5, 10]
+    min_samples_leaf: [1, 2, 4]
+  
+  xgboost_grid:
+    n_estimators: [50, 100, 200]
+    max_depth: [3, 5, 7]
+    learning_rate: [0.01, 0.1, 0.3]
+    subsample: [0.7, 0.8, 0.9]
+
+evaluation:
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1_score
+    - roc_auc
+    - confusion_matrix
+    - classification_report
+  
+  cross_validation:
+    enabled: true
+    cv_folds: 5
+    scoring: roc_auc
+  
+  threshold_optimization:
+    enabled: true
+    metric: f1_score
+    range: [0.3, 0.7]
+    step: 0.05
+
+model_selection:
+  primary_metric: roc_auc
+  minimum_threshold: 0.75
+  
+risk_thresholds:
+  low_risk: 0.3
+  medium_risk: 0.6
+  high_risk: 0.8
+
+mlflow:
+  enabled: true
+  tracking_uri: http://localhost:5000
+  experiment_name: financial_risk_assessment
+  log_models: true
+  log_artifacts: true
+
+production:
+  model_path: models/saved_models/
+  model_name: risk_model.pkl
+  feature_importance_path: models/saved_models/feature_importance.json
+  version: v1.0.0
+  
+monitoring:
+  drift_detection: true
+  performance_tracking: true
+  alert_threshold: 0.05  # Alert if performance drops by 5%
