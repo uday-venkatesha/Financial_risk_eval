@@ -10,6 +10,7 @@ echo "======================================"
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Get project root directory
@@ -24,30 +25,28 @@ echo ""
 echo "Step 1: Setting AIRFLOW_HOME environment variable..."
 export AIRFLOW_HOME="$AIRFLOW_HOME"
 
-# create AIRFLOW_HOME and common subdirectories
+# Create AIRFLOW_HOME and common subdirectories
 mkdir -p "$AIRFLOW_HOME/dags" "$AIRFLOW_HOME/plugins" "$AIRFLOW_HOME/logs"
+echo -e "${GREEN}✓ Directories created${NC}"
+
 # Step 2: Check if Airflow is installed
 echo ""
 echo "Step 2: Checking Airflow installation..."
 if ! command -v airflow &> /dev/null; then
     echo "Airflow not found. Installing..."
-    # use python3 -m pip to be explicit and install for the current user
     python3 -m pip install --user apache-airflow==2.6.3
     python3 -m pip install --user apache-airflow-providers-postgres==5.5.1
     echo -e "${GREEN}✓ Airflow installed${NC}"
 else
     echo -e "${GREEN}✓ Airflow already installed${NC}"
 fi
-if ! command -v airflow &> /dev/null; then
-    echo "Airflow not found. Installing..."
-    pip install apache-airflow==2.6.3
-    pip install apache-airflow-providers-postgres==5.5.1
-    echo -e "${GREEN}✓ Airflow installed${NC}"
-else
-    echo -e "${GREEN}✓ Airflow already installed${NC}"
-fi
 
 # Step 3: Initialize Airflow database
+echo ""
+echo "Step 3: Initializing Airflow database..."
+airflow db init
+echo -e "${GREEN}✓ Airflow database initialized${NC}"
+
 # Step 4: Create admin user
 echo ""
 echo "Step 4: Creating admin user..."
@@ -55,15 +54,6 @@ airflow users create \
     --username admin \
     --firstname Admin \
     --lastname User \
-    --role Admin \
-    --email udayvenkatesh2015@gmail.com \
-    --password admin 2>/dev/null || echo -e "${GREEN}✓ Admin user already exists${NC}"
-echo ""
-echo "Step 4: Creating admin user..."
-airflow users create \
-    --username uvenkatesha \
-    --firstname Uday \
-    --lastname Venkatesha \
     --role Admin \
     --email udayvenkatesh2015@gmail.com \
     --password admin 2>/dev/null || echo -e "${GREEN}✓ Admin user already exists${NC}"
@@ -75,9 +65,11 @@ cat > "$AIRFLOW_HOME/airflow.cfg" << EOF
 [core]
 dags_folder = $AIRFLOW_HOME/dags
 plugins_folder = $AIRFLOW_HOME/plugins
-base_log_folder = $AIRFLOW_HOME/logs
 load_examples = False
 default_timezone = America/Chicago
+
+[logging]
+base_log_folder = $AIRFLOW_HOME/logs
 
 [webserver]
 base_url = http://localhost:8080
@@ -89,7 +81,7 @@ dag_dir_list_interval = 60
 catchup_by_default = False
 
 [api]
-auth_backend = airflow.api.auth.backend.basic_auth
+auth_backends = airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
 EOF
 echo -e "${GREEN}✓ Airflow configuration created${NC}"
 
@@ -115,28 +107,27 @@ echo ""
 # Add connection
 airflow connections delete 'risk_db_connection' 2>/dev/null || true
 airflow connections add 'risk_db_connection' \
-# Step 7: Test DAG
-echo ""
-echo "Step 7: Testing DAG file..."
-# perform a simple syntax check rather than executing the DAG file
-if python3 -m py_compile "$AIRFLOW_HOME/dags/risk_assessment_dag.py" 2>/dev/null; then
-    echo -e "${GREEN}✓ DAG file is syntactically valid${NC}"
-else
-    echo -e "${YELLOW}⚠ Warning: DAG file has syntax errors. Check $AIRFLOW_HOME/dags/risk_assessment_dag.py${NC}"
-fi
-
+    --conn-type 'postgres' \
+    --conn-host "$DB_HOST" \
+    --conn-login "$DB_USER" \
+    --conn-password "$DB_PASSWORD" \
+    --conn-schema "$DB_NAME" \
+    --conn-port "$DB_PORT"
 echo -e "${GREEN}✓ PostgreSQL connection configured${NC}"
 
 # Step 7: Test DAG
-# Step 9: Test database connection
 echo ""
-echo "Step 9: Testing database connection..."
-# verify the connection exists in Airflow; this checks Airflow has the connection configured
-if airflow connections get risk_db_connection >/dev/null 2>&1; then
-    echo -e "${GREEN}✓ Database connection configured in Airflow${NC}"
+echo "Step 7: Testing DAG file..."
+if [ -f "$AIRFLOW_HOME/dags/risk_assessment_dag.py" ]; then
+    if python3 -m py_compile "$AIRFLOW_HOME/dags/risk_assessment_dag.py" 2>/dev/null; then
+        echo -e "${GREEN}✓ DAG file is syntactically valid${NC}"
+    else
+        echo -e "${YELLOW}⚠ Warning: DAG file has syntax errors. Check $AIRFLOW_HOME/dags/risk_assessment_dag.py${NC}"
+    fi
 else
-    echo -e "${YELLOW}⚠ Warning: Could not find 'risk_db_connection' in Airflow connections${NC}"
+    echo -e "${YELLOW}⚠ Warning: DAG file not found at $AIRFLOW_HOME/dags/risk_assessment_dag.py${NC}"
 fi
+
 # Step 8: Create logs directory
 echo ""
 echo "Step 8: Creating logs directory..."
@@ -146,9 +137,12 @@ echo -e "${GREEN}✓ Logs directory created${NC}"
 # Step 9: Test database connection
 echo ""
 echo "Step 9: Testing database connection..."
-airflow connections test risk_db_connection && \
-    echo -e "${GREEN}✓ Database connection successful${NC}" || \
-    echo -e "${YELLOW}⚠ Warning: Could not connect to database${NC}"
+if airflow connections test risk_db_connection 2>&1 | grep -q "Connection success"; then
+    echo -e "${GREEN}✓ Database connection successful${NC}"
+else
+    echo -e "${RED}✗ Database connection failed${NC}"
+    echo -e "${YELLOW}Please check your PostgreSQL credentials and ensure the database is running${NC}"
+fi
 
 # Print summary
 echo ""
