@@ -3,11 +3,11 @@ development:
   port: 5432
   database: risk_db
   username: postgres
-  password: your_password
+  password: rootroot
 
 production:
   host: prod-db-server
   port: 5432
   database: risk_db_prod
   username: prod_user
-  password: ${DB_PASSWORD}  # From environment variable
+  password: rootroot
