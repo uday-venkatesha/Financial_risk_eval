@@ -37,11 +37,12 @@ def main():
     print("Connecting to database...")
     engine = create_engine(get_db_connection_string())
     
+    # Corrected code (process dependent tables first):
     data_dict = {
-        'customers': customers,
         'credit_history': credit,
         'transactions': transactions,
-        'loan_applications': loans
+        'loan_applications': loans,
+        'customers': customers
     }
     
     print("Loading data to database...")
